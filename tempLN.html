@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Public Transit Service in Seattle</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://fonts.googleapis.com/css?family=Titillium+Web|Oswald" rel="stylesheet">
+    <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Titillium Web', serif;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #info { /* left information pannel */
+            z-index: 100;
+            position: absolute;
+            width: 400px;
+            max-width: calc(100% - 20px);
+            top: 4.8%;
+            bottom: 0%;
+            left: 0%;
+            padding: 18px 15px 18px 15px;
+            background: #4c87975a;
+            color: white;
+            overflow-y: auto;
+            border-radius: 0px;
+        }
+
+        #info a {
+            color: lightgray;
+        }
+
+        #info a:hover {
+            color: white;
+            opacity: 0.7;
+        }
+
+        #title {
+            font-size: 25px;
+            font-family: 'Oswald', sans-serif;
+            margin-bottom: 14px;
+        }
+
+        #title span {
+            font-size: 14px;
+            float: right;
+            margin-right: 10px;
+            margin-top: 8px;
+        }
+
+        #desc {
+            text-align: center;
+            color: lightgray;
+            font-size: medium;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        #collision-count {
+            margin: 0;
+            text-align: center;
+            color: #58c4dd;
+            font-size: 50px;
+            line-height: 1.1;
+        }
+
+        #severity-chart {
+            margin-top: 10px;
+        }
+
+        .card {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+        }
+
+        .section-title {
+            margin: 0 0 8px 0;
+            font-family: 'Oswald', sans-serif;
+            font-size: 17px;
+            letter-spacing: 0.4px;
+        }
+
+        .control-label {
+            display: block;
+            margin: 6px 0;
+            color: #e9ecef;
+            font-size: 14px;
+        }
+
+        .control-label input {
+            margin-right: 8px;
+        }
+
+        .btn {
+            margin-top: 8px;
+            border: 1px solid #adb5bd;
+            background: transparent;
+            color: #f8f9fa;
+            padding: 6px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #progress {
+            margin: 8px 0 0 0;
+            font-size: 12px;
+            color: #adb5bd;
+        }
+
+        #risk-list {
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .risk-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 0;
+            cursor: pointer;
+        }
+
+        .risk-item:last-child {
+            border-bottom: 0;
+        }
+
+        .risk-item:hover {
+            color: #ffd166;
+        }
+
+        .risk-meta {
+            font-size: 12px;
+            color: #ced4da;
+        }
+
+        #footer {
+            margin-top: 12px;
+            margin-right: 4px;
+            font-size: 13px;
+            line-height: 150%;
+            color: lightgray;
+        }
+
+        #legend { /* bottom right legend */
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 130px;
+            background:  #4c87975a;
+            margin-right: 20px;
+            margin-bottom: 40px;
+            padding: 15px 12px;
+            border-radius: 40px;
+            font-family: 'Open Sans', sans-serif;
+            color: #ffffff; /* text color */
+            font-size: 13px;
+        }
+
+        .break {
+            position: relative;
+            margin-right: 30px;
+            padding: 0;
+            min-height: 20px;
+        }
+
+        .dot {
+            display: inline-block;
+            margin-top: 4px;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .dot-label {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-style: italic;
+            color: #ffffff;
+        }
+
+        .line-swatch {
+            display: inline-block;
+            width: 24px;
+            height: 4px;
+            margin-right: 6px;
+            vertical-align: middle;
+            border-radius: 2px;
+        }
+
+        .fill-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            vertical-align: middle;
+            border-radius: 2px;
+        }
+
+        .c3 text { /* for bar graph x and y*/
+            fill: #e9ecef;
+            font-size: 11px;
+        }
+
+        .c3-legend-item text { /* for bar graph */
+            fill: #ffffff !important;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .c3-tooltip-container .c3-tooltip {
+            background: rgba(28, 33, 40, 0.95);
+            color: #ffffff;
+            border-collapse: collapse;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .c3-tooltip th,
+        .c3-tooltip td {
+            background: rgba(28, 33, 40, 0.95) !important;
+            color: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.18) !important;
+            text-shadow: none !important;
+        }
+
+        .c3-tooltip tr {
+            background: rgba(28, 33, 40, 0.95) !important;
+        }
+
+        .c3-axis path,
+        .c3-axis line,
+        .c3-grid line {
+            stroke: rgba(255, 255, 255, 0.25);
+        }
+
+        .maplibregl-popup-content {
+            font-family: 'Titillium Web', serif;
+            color: #111827;
+        }
+
+        @media (max-width: 900px) {
+            #info {
+                width: calc(100% - 20px);
+                left: 10px;
+                right: 10px;
+                top: 10px;
+                bottom: auto;
+                max-height: 62%;
+            }
+
+            #legend {
+                right: 8px;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+
+        .navbar { /* top navigation bar; its sticky */
+            width: 100%;
+            height: 35px;
+            background-color:  #16353d5a;
+            display: flex;
+            align-items: center; 
+            justify-content: center;  
+            position: sticky;
+            top: 0;
+            z-index: 9;
+        }
+
+
+        .button { /* buttons for top nav bar */
+            padding: 8px 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+            z-index: 10;
+            
+        }
+
+
+        .button:hover { /* change color top nav bar button on hover  */
+            background-color: #58c4dd;;
+            cursor: pointer;
+            
+        }
+
+
+        .button:hover p { /* change colors of top nav bar button words on hover */
+            color: rgb(53, 137, 156); 
+            cursor: pointer;
+        }
+
+        a { /* removes underline for links */
+            text-decoration: none;  
+        }
+        
+    </style>
+    <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
+</head>
+
+<body>
+    <div id="info">
+        <div id="title">
+            Public Transit Service in Seattle
+            <span><a href="https://github.com/jakobzhao/geog458" target="_blank"><i class="bi bi-github"></i></a></span>
+            <span><a href="https://kingcounty.gov/en/dept/metro" target="_blank"><i class="bi bi-globe"></i></a></span>
+            <span id="reset"><a href="#">reset</a></span>
+        </div>
+
+        <div id="count" class="card">
+            <h5 id="desc"># Transit Stops in the Displaying Region</h5>
+            <p id="collision-count">0</p>
+        </div>
+
+        <div id="severity-chart"></div>
+
+        <div class="card">
+            <h5 class="section-title">Layers & Accessibility</h5>
+            <label class="control-label"><input type="checkbox" id="toggle-volume" checked>Transit routes</label>
+            <label class="control-label"><input type="checkbox" id="toggle-risk" checked>Stop accessibility index</label>
+            <label class="control-label"><input type="checkbox" id="toggle-collisions" checked>Transit stops</label>
+            <label class="control-label"><input type="checkbox" id="toggle-neighborhoods" checked>Neighborhood boundaries</label>
+            <button id="compute-risk" class="btn">Compute stop accessibility index</button>
+            <p id="progress">Accessibility index not computed yet.</p>
+        </div>
+
+        <div class="card">
+            <h5 class="section-title">Top Route Segments by Stop Access</h5>
+            <div id="risk-list">Accessibility index not computed yet.</div>
+        </div>
+
+        <div id="footer">
+            Data sources: Seattle neighborhoods, transit routes, and transit stops. The accessibility layer is computed
+            as nearby stops divided by route length.
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div id="legend"></div>
+
+    <!-- creat top nav bar -->
+    <nav class="navbar"> 
+        <a href="guide.html" target="_blank" class="button">User's Guide</a>
+        <a href="map.html" target="_blank" class="button">Seattle Transportation Map</a>
+        <a href="https://Maikhanhvt.github.io/GEOG458-final-project-transportation/about.html#data" class="button nav-link">Data</a>
+        <a href="about.html" target="_blank" class="button">About Us</a>
+        <a href="guide.html" target="_blank" class="button">User's Guide</a>
+    </nav>
+
+    <script>
+        const collisionsUrl = 'assets/stop-joined-neig.geojson'; /* ln changed to joined file */
+        const flowUrl = 'assets/route-joined-neig.geojson'; /* ln changed to joined file */
+        const neighborhoodsUrl = 'assets/Neighborhood_Map_Atlas_Neighborhoods.geojson';
+
+        const initialView = {
+            center: [-122.3321, 47.6062],
+            zoom: 11.2
+        };
+
+        let map = null;
+        let flowsWgs = null;
+        let collisionsWgs = null;
+        let neighborhoodsWgs = null;
+        let severityChart = null;
+
+
+    /* legend content starts here */
+        const legend = document.getElementById('legend');
+        const collisionGrades = ['North bound', 'South bound', 'Eeast bound', 'West bound']; /* LN changed from active status to direction */
+        const collisionColors = ['#6CBED9', '#e63946', '#ffbe0b', '#2a9d8f'];
+        const collisionRadii = [6, 6, 6, 6];
+
+        const labels = ['<div style="text-align:center;"><strong>Legend</strong></div>'];
+        for (let i = 0; i < collisionGrades.length; i += 1) {
+            const radius = collisionRadii[i];
+            labels.push(
+                '<p class="break"><i class="dot" style="background:' + collisionColors[i] + '; width: ' + (radius * 2) +
+                'px; height: ' + (radius * 2) + 'px;"></i><span class="dot-label" style="top: ' + radius + 'px;">' +
+                collisionGrades[i] + '</span></p>'
+            );
+        }
+        labels.push('<p style="margin:8px 0 0 0;"><span class="line-swatch" style="background:#3a86ff"></span>Routes</p>');
+        labels.push('<p style="margin:4px 0 0 0;"><span class="line-swatch" style="background:#d73027"></span>High stop access</p>');
+        labels.push('<p style="margin:4px 0 0 0;"><span class="fill-swatch" style="background:#9ecae1"></span>Neighborhoods</p>');
+        labels.push('<p style="text-align:right;font-size:10pt;margin:6px 0 0 0;">Source: Public transit datasets</p>');
+        legend.innerHTML = labels.join('');
+    /* legend content ends here */
+
+        function reprojectGeometry(geometry) {
+            if (!geometry) {
+                return null;
+            }
+            return geometry;
+        }
+
+        function reprojectFeature(feature) {
+            const geometry = reprojectGeometry(feature.geometry);
+            if (!geometry) {
+                return null;
+            }
+            return { ...feature, geometry };
+        }
+
+        async function loadData() {
+            const [collisions, flows, neighborhoods] = await Promise.all([
+                fetch(collisionsUrl).then(response => response.json()),
+                fetch(flowUrl).then(response => response.json()),
+                fetch(neighborhoodsUrl).then(response => response.json())
+            ]);
+
+            collisionsWgs = {
+                type: 'FeatureCollection',
+                features: collisions.features.map(reprojectFeature).filter(Boolean)
+            };
+
+            flowsWgs = {
+                type: 'FeatureCollection',
+                features: flows.features.map(reprojectFeature).filter(Boolean)
+            };
+
+            neighborhoodsWgs = {
+                type: 'FeatureCollection',
+                features: neighborhoods.features.map(reprojectFeature).filter(Boolean)
+            };
+        }
+
+        function getFeatureId(feature, index) {
+            const properties = feature.properties || {};
+            if (properties.OBJECTID !== undefined && properties.OBJECTID !== null) {
+                return String(properties.OBJECTID);
+            }
+            if (properties.BEARING_CODE !== undefined && properties.BEARING_CODE !== null) { /* LN changed from STOP_ID to BEARING_CODE */
+                return String(properties.BEARING_CODE);
+            }
+            const coordinates = feature.geometry && feature.geometry.coordinates ? feature.geometry.coordinates : [index];
+            return coordinates.join(',');
+        }
+
+        function updateSummaryPanel() {
+            if (!map || !map.getLayer('collisions')) {
+                return;
+            }
+
+            const rendered = map.queryRenderedFeatures({ layers: ['collisions'] });
+            
+            const seen = new Set();
+            const severityCounts = { /* LN changed to nsew */
+                north: 0,
+                south: 0,
+                east: 0,
+                west: 0,
+                other: 0
+            };
+
+            rendered.forEach((feature, index) => {
+                const id = getFeatureId(feature, index);
+                if (seen.has(id)) {
+                    return;
+                }
+                seen.add(id);
+
+                const properties = feature.properties || {};
+                const bearing = String(properties.BEARING_CODE || '').toUpperCase(); /* LN changed to nsew */
+                if (bearing === 'N'){
+                    severityCounts.north += 1;
+                } 
+                else if (bearing === 'S') {
+                    severityCounts.south += 1;
+                }
+                else if (bearing === 'E'){ 
+                    severityCounts.east += 1;
+                }
+                else if (bearing === 'W'){ 
+                    severityCounts.west += 1;
+                }
+                else{
+                    severityCounts.other += 1;
+                } 
+
+        
+            });
+
+            document.getElementById('collision-count').textContent = seen.size.toLocaleString();
+            
+
+            const columns = [
+                ['North', severityCounts.north],
+                ['South', severityCounts.south],
+                ['East', severityCounts.east],
+                ['West', severityCounts.west]
+            ];
+
+            if (!severityChart) {
+                severityChart = c3.generate({
+                    bindto: '#severity-chart',
+                    data: {
+                        columns,
+                        type: 'bar',
+                        colors: {
+                            North: '#6CBED9',
+                            South: '#e63946',
+                            East: '#ffbe0b',
+                            West: '#2a9d8f'
+                        }
+                       
+                    },
+                    tooltip: {
+                        grouped: false,
+                        contents: (data, defaultTitleFormat, defaultValueFormat, color) => {
+                            if (!data || !data.length || !data[0]) {
+                                return '';
+                            }
+                            const item = data[0];
+                            const count = Number(item.value || 0);
+                            const colorSwatch = color(item.id);
+                            return (
+                                '<table class="c3-tooltip">' +
+                                '<tbody>' +
+                                '<tr><th colspan="2">' + (item.id || 'Stop Type') + '</th></tr>' +
+                                '<tr>' +
+                                '<td style="color:#fff !important;">' +
+                                '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + colorSwatch + ';margin-right:6px;"></span>Count</td>' +
+                                '<td style="color:#fff !important;font-weight:700;">' + d3.format(',d')(count) + '</td>' +
+                                '</tr>' +
+                                '</tbody>' +
+                                '</table>'
+                            );
+                        }
+                    },
+                    axis: {
+                        x: {
+                            type: 'category',
+                            categories: ['Visible stops']
+                        },
+                        y: {
+                            tick: { format: d3.format('d') }
+                        }
+                    },
+                    bar: {
+                        width: { ratio: 0.8 }
+                    },
+                    legend: {
+                        position: 'right'
+                    },
+                    size: {
+                        height: 210
+                    },
+                    padding: {
+                        top: 8,
+                        right: 8,
+                        bottom: 8,
+                        left: 36
+                    }
+                });
+            } else {
+                severityChart.load({ columns });
+            }
+        }
+
+        function buildSpatialIndex(flowData, cellSize) {
+            const index = new Map();
+            const bboxes = [];
+
+            flowData.features.forEach((feature, featureIndex) => {
+                if (!feature.geometry) {
+                    return;
+                }
+
+                const bbox = turf.bbox(feature);
+                bboxes[featureIndex] = bbox;
+                const minCellX = Math.floor(bbox[0] / cellSize);
+                const maxCellX = Math.floor(bbox[2] / cellSize);
+                const minCellY = Math.floor(bbox[1] / cellSize);
+                const maxCellY = Math.floor(bbox[3] / cellSize);
+
+                for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+                    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+                        const key = `${cellX},${cellY}`;
+                        if (!index.has(key)) {
+                            index.set(key, []);
+                        }
+                        index.get(key).push(featureIndex);
+                    }
+                }
+            });
+
+            return { index, bboxes };
+        }
+
+        function computeRiskAsync(flowData, collisionData, callbacks) {
+            const crashCounts = new Array(flowData.features.length).fill(0);
+            const cellSize = 0.02;
+            const searchRadiusCells = 1;
+            const { index, bboxes } = buildSpatialIndex(flowData, cellSize);
+            const total = collisionData.features.length;
+            let current = 0;
+
+            function step() {
+                const frameStart = performance.now();
+
+                while (current < total && performance.now() - frameStart < 20) {
+                    const collision = collisionData.features[current];
+                    current += 1;
+
+                    if (!collision || !collision.geometry) {
+                        continue;
+                    }
+
+                    const lng = collision.geometry.coordinates[0];
+                    const lat = collision.geometry.coordinates[1];
+                    const centerX = Math.floor(lng / cellSize);
+                    const centerY = Math.floor(lat / cellSize);
+                    const candidates = new Set();
+
+                    for (let deltaX = -searchRadiusCells; deltaX <= searchRadiusCells; deltaX += 1) {
+                        for (let deltaY = -searchRadiusCells; deltaY <= searchRadiusCells; deltaY += 1) {
+                            const key = `${centerX + deltaX},${centerY + deltaY}`;
+                            const matches = index.get(key);
+                            if (matches) {
+                                matches.forEach(id => candidates.add(id));
+                            }
+                        }
+                    }
+
+                    let nearestFeatureIndex = -1;
+                    let nearestDistance = Infinity;
+
+                    candidates.forEach(featureIndex => {
+                        const flowFeature = flowData.features[featureIndex];
+                        if (!flowFeature || !flowFeature.geometry) {
+                            return;
+                        }
+
+                        const bbox = bboxes[featureIndex];
+                        if (lng < bbox[0] - cellSize || lng > bbox[2] + cellSize || lat < bbox[1] - cellSize || lat > bbox[3] + cellSize) {
+                            return;
+                        }
+
+                        const snapped = turf.nearestPointOnLine(
+                            { type: flowFeature.geometry.type, coordinates: flowFeature.geometry.coordinates },
+                            collision.geometry
+                        );
+
+                        if (!snapped || !snapped.properties || typeof snapped.properties.dist !== 'number') {
+                            return;
+                        }
+
+                        if (snapped.properties.dist < nearestDistance) {
+                            nearestDistance = snapped.properties.dist;
+                            nearestFeatureIndex = featureIndex;
+                        }
+                    });
+
+                    if (nearestFeatureIndex >= 0) {
+                        crashCounts[nearestFeatureIndex] += 1;
+                    }
+                }
+
+                if (callbacks.onProgress) {
+                    callbacks.onProgress(current, total);
+                }
+
+                if (current < total) {
+                    setTimeout(step, 0);
+                    return;
+                }
+
+                const scores = flowData.features.map((feature, index) => {
+                    const properties = feature.properties || {};
+                    const lengthKm = turf.length(feature, { units: 'kilometers' });
+                    const crashes = crashCounts[index];
+                    const score = crashes / (lengthKm + 0.001);
+
+                    return {
+                        index,
+                        name: String(properties.ROUTE_NUM || properties.ROUTE_ID || properties.OBJECTID || 'Route'),
+                        volume: lengthKm,
+                        crashes,
+                        score
+                    };
+                });
+
+                if (callbacks.onDone) {
+                    callbacks.onDone(scores);
+                }
+            }
+
+            step();
+        }
+
+        function renderTopSegments(scores) {
+            const list = document.getElementById('risk-list');
+            list.innerHTML = '';
+
+            scores
+                .filter(item => item.crashes > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 12)
+                .forEach((item, rank) => {
+                    const row = document.createElement('div');
+                    row.className = 'risk-item';
+                    row.innerHTML =
+                        `<strong>#${rank + 1} Route ${item.name}</strong>` +
+                        `<div class="risk-meta">Stops: ${item.crashes} | Length (km): ${item.volume.toFixed(2)} | Index: ${item.score.toFixed(2)}</div>`;
+
+                    row.addEventListener('click', () => {
+                        const segment = flowsWgs.features[item.index];
+                        if (!segment) {
+                            return;
+                        }
+                        const bbox = turf.bbox(segment);
+                        map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40, maxZoom: 16 });
+                    });
+
+                    list.appendChild(row);
+                });
+
+            if (!list.childElementCount) {
+                list.textContent = 'No segments with nearby stops were found.';
+            }
+        }
+
+        function setupToggle(controlId, layerId) {
+            const control = document.getElementById(controlId);
+            const sync = () => {
+                if (!map || !map.getLayer(layerId)) {
+                    return;
+                }
+                const visibility = control.checked ? 'visible' : 'none';
+                map.setLayoutProperty(layerId, 'visibility', visibility);
+                if (layerId === 'neighborhoods' && map.getLayer('neighborhood-outline')) {
+                    map.setLayoutProperty('neighborhood-outline', 'visibility', visibility);
+                }
+                updateSummaryPanel();
+            };
+
+            control.addEventListener('change', sync);
+            sync();
+        }
+
+        async function initializeMap() {
+            await loadData();
+
+            const mapStyle = {
+                version: 8,
+                sources: {
+                    cartoDark: {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                        ],
+                        tileSize: 256,
+                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                    }
+                },
+                layers: [
+                    {
+                        id: 'cartoDark',
+                        type: 'raster',
+                        source: 'cartoDark'
+                    }
+                ]
+            };
+
+            map = new maplibregl.Map({
+                container: 'map',
+                style: mapStyle,
+                center: initialView.center,
+                zoom: initialView.zoom,
+                attributionControl: false
+            });
+
+            map.addControl(new maplibregl.NavigationControl(), 'top-right');
+            map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+            map.on('load', () => {
+                map.addSource('neighborhoods', { type: 'geojson', data: neighborhoodsWgs });
+                map.addSource('flows', { type: 'geojson', data: flowsWgs });
+                map.addSource('collisions', { type: 'geojson', data: collisionsWgs });
+
+                map.addLayer({
+                    id: 'neighborhoods',
+                    type: 'fill',
+                    source: 'neighborhoods',
+                    paint: {
+                        'fill-color': '#9ecae1',
+                        'fill-opacity': 0.18
+                    }
+                });
+
+                map.addLayer({
+                    id: 'neighborhood-outline',
+                    type: 'line',
+                    source: 'neighborhoods',
+                    paint: {
+                        'line-color': '#cfe8ff',
+                        'line-width': 1,
+                        'line-opacity': 0.45
+                    }
+                });
+
+                map.addLayer({
+                    id: 'volume',
+                    type: 'line',
+                    source: 'flows',
+                    paint: {
+                        'line-color': [
+                            'case',
+                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'E'], '#5e60ce',
+                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'L'], '#3a86ff',
+                            '#4895ef'
+                        ],
+                        'line-width': [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 1.4,
+                            12, 2.5,
+                            14, 4
+                        ],
+                        'line-opacity': 0.92
+                    }
+                });
+
+                map.addLayer({
+                    id: 'risk',
+                    type: 'line',
+                    source: 'flows',
+                    paint: {
+                        'line-color': '#91cf60',
+                        'line-width': 3.5,
+                        'line-opacity': 0.95
+                    }
+                });
+
+                map.addLayer({
+                    id: 'collisions',
+                    type: 'circle',
+                    source: 'collisions',
+                    paint: {
+                        'circle-radius': 5.8,
+                        'circle-color': [
+                            'match',
+                            ['upcase', ['coalesce', ['get', 'BEARING_CODE'], '']],
+                            'N', '#6CBED9', 
+                            'S', '#e63946',
+                            'E', '#ffbe0b',
+                            'W', '#2a9d8f',
+                            '#7f8c8d'
+                        ],
+                        'circle-opacity': 0.8,
+                        'circle-stroke-color': '#0b1526',
+                        'circle-stroke-width': 0.8
+                    }
+                });
+
+                map.on('click', 'neighborhoods', event => {
+                    const properties = event.features[0].properties;
+                    new maplibregl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            `<b>Neighborhood</b><br>` +
+                            `Large Area: ${properties.L_HOOD || 'n/a'}<br>` +
+                            `Small Area: ${properties.S_HOOD || 'n/a'}`
+                        )
+                        .addTo(map);
+                });
+
+                map.on('click', 'volume', event => {
+                    const properties = event.features[0].properties;
+                    new maplibregl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            `<b>Route ${properties.ROUTE_NUM || 'n/a'}</b><br>` +
+                            `Route ID: ${properties.ROUTE_ID || 'n/a'}<br>` +
+                            `Service Status: ${properties.CURRENT_NEXT_CODE || 'n/a'}<br>` +
+                            `Type: ${properties.LOCAL_EXPRESS_CODE || 'n/a'}`
+                        )
+                        .addTo(map);
+                });
+
+                map.on('click', 'collisions', event => {
+                    const properties = event.features[0].properties;
+                    new maplibregl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            `<b>Route List ${properties.ROUTE_LIST || 'n/a'}</b><br>` +
+                            `Street Name: ${properties.ON_STREET_NAME || 'n/a'}<br>` +
+                            `Stop: ${properties.STOP_ID || 'n/a'}<br>` +
+                            `District: ${properties.TRF_DISTRICT_CODE || 'n/a'}`
+                        )
+                        .addTo(map);
+                });
+
+                map.on('click', 'risk', event => {
+                    const properties = event.features[0].properties;
+                    new maplibregl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            `<b>Stop Accessibility</b><br>` +
+                            `Route: ${properties.ROUTE_NUM || properties.ROUTE_ID || 'n/a'}<br>` +
+                            `Nearby Stops: ${properties.stop_count || 0}<br>` +
+                            `Index: ${Number(properties.risk_score || 0).toFixed(2)}`
+                        )
+                        .addTo(map);
+                });
+
+                setupToggle('toggle-volume', 'volume');
+                setupToggle('toggle-risk', 'risk');
+                setupToggle('toggle-collisions', 'collisions');
+                setupToggle('toggle-neighborhoods', 'neighborhoods');
+
+                map.on('idle', updateSummaryPanel);
+                map.on('moveend', updateSummaryPanel);
+                updateSummaryPanel();
+            });
+        }
+
+        document.getElementById('compute-risk').addEventListener('click', () => {
+            if (!map || !map.getSource('flows')) {
+                return;
+            }
+
+            const button = document.getElementById('compute-risk');
+            const progress = document.getElementById('progress');
+
+            button.disabled = true;
+            button.textContent = 'Computing...';
+            progress.textContent = 'Starting accessibility computation...';
+
+            computeRiskAsync(flowsWgs, collisionsWgs, {
+                onProgress: (done, total) => {
+                    progress.textContent = `Computing accessibility: ${done}/${total}`;
+                },
+                onDone: scores => {
+                    const augmentedFeatures = flowsWgs.features.map((feature, index) => {
+                        const crashes = scores[index].crashes;
+                        const score = scores[index].score;
+                        return {
+                            ...feature,
+                            properties: {
+                                ...feature.properties,
+                                stop_count: crashes,
+                                risk_score: score
+                            }
+                        };
+                    });
+
+                    flowsWgs = {
+                        ...flowsWgs,
+                        features: augmentedFeatures
+                    };
+
+                    map.getSource('flows').setData(flowsWgs);
+
+                    const nonZeroScores = scores
+                        .map(item => item.score)
+                        .filter(value => value > 0)
+                        .sort((a, b) => a - b);
+
+                    function quantile(percentile) {
+                        if (!nonZeroScores.length) {
+                            return 0;
+                        }
+                        const idx = Math.min(nonZeroScores.length - 1, Math.floor(percentile * nonZeroScores.length));
+                        return nonZeroScores[idx];
+                    }
+
+                    const q25 = quantile(0.25) || 1;
+                    const q50 = quantile(0.5) || 2;
+                    const q75 = quantile(0.75) || 3;
+                    const q90 = quantile(0.9) || 4;
+
+                    map.setPaintProperty('risk', 'line-color', [
+                        'step',
+                        ['coalesce', ['get', 'risk_score'], 0],
+                        '#cddfd0', q25, '#a9e3a0',
+                        q50, '#fee08b',
+                        q75, '#fdae61',
+                        q90, '#d73027'
+                    ]);
+
+                    map.setPaintProperty('risk', 'line-width', [
+                        'interpolate', ['linear'], ['coalesce', ['get', 'risk_score'], 0],
+                        0, 3.5,
+                        q25, 5,
+                        q50, 6.5,
+                        q75, 8,
+                        q90, 10
+                    ]);
+
+                    renderTopSegments(scores);
+
+                    progress.textContent = 'Accessibility index ready.';
+                    button.textContent = 'Recompute accessibility index';
+                    button.disabled = false;
+                }
+            });
+        });
+
+        document.getElementById('reset').addEventListener('click', event => {
+            event.preventDefault();
+            if (!map) {
+                return;
+            }
+
+            map.flyTo({
+                center: initialView.center,
+                zoom: initialView.zoom
+            });
+        });
+
+        initializeMap().catch(error => {
+            console.error(error);
+            document.getElementById('progress').textContent = 'Failed to load data. Check console for details.';
+        });
+    </script>
+</body>
+</html>
