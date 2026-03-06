@@ -879,18 +879,7 @@
                     }
                 });
 
-                map.on('click', 'neighborhoods', event => {
-                    const properties = event.features[0].properties;
-                    new maplibregl.Popup()
-                        .setLngLat(event.lngLat)
-                        .setHTML(
-                            `<b>Neighborhood</b><br>` +
-                            `Large Area: ${properties.L_HOOD || 'n/a'}<br>` +
-                            `Small Area: ${properties.S_HOOD || 'n/a'}`
-                        )
-                        .addTo(map);
-                });
-
+               
                 map.on('click', 'volume', event => {
                     const properties = event.features[0].properties;
                     new maplibregl.Popup()
@@ -911,8 +900,11 @@
                         .setHTML(
                             `<b>Route List ${properties.ROUTE_LIST || 'n/a'}</b><br>` +
                             `Street Name: ${properties.ON_STREET_NAME || 'n/a'}<br>` +
-                            `Stop: ${properties.STOP_ID || 'n/a'}<br>` +
-                            `District: ${properties.TRF_DISTRICT_CODE || 'n/a'}`
+                            `Neighborhood (large): ${properties.L_HOOD || 'n/a'}<br>` +
+                            `Neighborhood (small): ${properties.S_HOOD || 'n/a'}<br>`+
+                            `Stop number: ${properties.STOP_ID || 'n/a'}<br>` +
+                            `District: ${properties.TRF_DISTRICT_CODE || 'n/a'}` 
+                            
                         )
                         .addTo(map);
                 });
