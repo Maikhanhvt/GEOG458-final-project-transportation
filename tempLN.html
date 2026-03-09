@@ -315,6 +315,23 @@
         a { /* removes underline for links */
             text-decoration: none;  
         }
+
+      
+        #neighborhood-menu { 
+            width: 100%;             /* make it fill the card */
+            padding: 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #58c4dd;          /* text color */
+        }
+
+        #neighborhood-menu option {
+            background: rgb(36, 71, 86);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+      
         
     </style>
     <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
@@ -331,6 +348,16 @@
             <span><a href="https://kingcounty.gov/en/dept/metro" target="_blank"><i class="bi bi-globe"></i></a></span>
             <span id="reset"><a href="#">reset</a></span>
         </div>
+
+        <div class="card">
+            <h5 class="section-title">Zoom to Neighborhood</h5>
+            <select id="neighborhood-menu">
+                <option value="">Select a neighborhood</option>
+            </select>
+        </div>
+
+      
+       
 
         <div id="count" class="card">
             <h5 id="desc"># Transit Stops in the Displaying Region</h5>
@@ -354,14 +381,20 @@
             <div id="risk-list">Accessibility index not computed yet.</div>
         </div>
 
+
         <div id="footer">
             Data sources: Seattle neighborhoods, transit routes, and transit stops. The accessibility layer is computed
             as nearby stops divided by route length.
         </div>
-    </div>
 
+   
+
+    </div> <!-- end info panel-->
     <div id="map"></div>
+
+
     <div id="legend"></div>
+    
 
     <!-- creat top nav bar -->
     <nav class="navbar"> 
@@ -378,8 +411,8 @@
         const neighborhoodsUrl = 'assets/Neighborhood_Map_Atlas_Neighborhoods.geojson';
 
         const initialView = {
-            center: [-122.3321, 47.6062],
-            zoom: 11.2
+            center: [-122.3325, 47.6220],
+            zoom: 10.4
         };
 
         let map = null;
@@ -805,6 +838,24 @@
                 map.addSource('flows', { type: 'geojson', data: flowsWgs });
                 map.addSource('collisions', { type: 'geojson', data: collisionsWgs });
 
+                map.addSource('selected-neighborhood', { // for selected polygon
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
+                    }
+                });
+
+                map.addLayer({ //for selected polygon
+                    id: 'selected-neighborhood-fill',
+                    type: 'fill',
+                    source: 'selected-neighborhood',
+                    paint: {
+                        'fill-color': '#58c4dd', // h
+                        'fill-opacity': 0.2
+                    }
+                });
+
                 map.addLayer({
                     id: 'neighborhoods',
                     type: 'fill',
@@ -879,6 +930,10 @@
                     }
                 });
 
+                
+
+                
+
                
                 map.on('click', 'volume', event => {
                     const properties = event.features[0].properties;
@@ -930,8 +985,58 @@
                 map.on('idle', updateSummaryPanel);
                 map.on('moveend', updateSummaryPanel);
                 updateSummaryPanel();
+
+            // SELECTION MENU STARTS HERE 
+            
+            
+
+            const menu = document.getElementById("neighborhood-menu");
+
+            const neighborhoodSet = new Set(); //  set store unique names
+            neighborhoodsWgs.features.forEach((feature, index) => {
+                const name = feature.properties.L_HOOD; // iterate through diff L_HOOD
+                if (!name) return; // skip if no name
+                if (neighborhoodSet.has(name)) return; // skip duplicates
+
+                neighborhoodSet.add(name); // add name to set if returned 
+
+                const option = document.createElement("option");
+                option.value = index;        // store the feature index (for zoom)
+                option.textContent = name;
+
+                menu.appendChild(option);
             });
-        }
+
+            menu.addEventListener("change", function () {
+                const feature = neighborhoodsWgs.features[this.value];
+                if (!feature) return;
+                const bbox = turf.bbox(feature); // min/max coordinates
+                map.fitBounds(
+                    [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], // fit polygon to screen 
+                    { padding: 100 }
+                );
+
+                map.getSource('selected-neighborhood').setData(feature); // outline polygon
+
+            });
+            
+
+/////
+
+   
+            
+
+
+
+
+                
+                    
+
+
+            }); // map.on(load) ends 
+        } //  async function initializeMap() ends
+
+        
 
         document.getElementById('compute-risk').addEventListener('click', () => {
             if (!map || !map.getSource('flows')) {
