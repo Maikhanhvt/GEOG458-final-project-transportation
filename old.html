@@ -22,19 +22,19 @@
             width: 100%;
         }
 
-        #info { /* left information pannel */
-            z-index: 100;
+        #info {
+            z-index: 1000;
             position: absolute;
-            width: 400px;
+            width: 500px;
             max-width: calc(100% - 20px);
-            top: 4.8%;
-            bottom: 0%;
-            left: 0%;
+            top: 1%;
+            bottom: 1%;
+            left: .5%;
             padding: 18px 15px 18px 15px;
-            background: #4c87975a;
+            background: #343a40;
             color: white;
             overflow-y: auto;
-            border-radius: 0px;
+            border-radius: 4px;
         }
 
         #info a {
@@ -162,24 +162,24 @@
             color: lightgray;
         }
 
-        #legend { /* bottom right legend */
+        #legend {
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 130px;
-            background:  #4c87975a;
+            width: 180px;
+            background: #fff;
             margin-right: 20px;
             margin-bottom: 40px;
-            padding: 15px 12px;
-            border-radius: 40px;
+            padding: 10px 12px;
+            border-radius: 3px;
             font-family: 'Open Sans', sans-serif;
-            color: #ffffff; /* text color */
+            color: #1f2933;
             font-size: 13px;
         }
 
         .break {
             position: relative;
-            margin-right: 30px;
+            margin: 0;
             padding: 0;
             min-height: 20px;
         }
@@ -196,7 +196,7 @@
             top: 0;
             right: 0;
             font-style: italic;
-            color: #ffffff;
+            color: #1f2933;
         }
 
         .line-swatch {
@@ -217,12 +217,12 @@
             border-radius: 2px;
         }
 
-        .c3 text { /* for bar graph x and y*/
+        .c3 text {
             fill: #e9ecef;
             font-size: 11px;
         }
 
-        .c3-legend-item text { /* for bar graph */
+        .c3-legend-item text {
             fill: #ffffff !important;
             font-size: 12px;
             font-weight: 600;
@@ -274,65 +274,6 @@
                 margin-bottom: 10px;
             }
         }
-
-        .navbar { /* top navigation bar; its sticky */
-            width: 100%;
-            height: 35px;
-            background-color:  #16353d5a;
-            display: flex;
-            align-items: center; 
-            justify-content: center;  
-            position: sticky;
-            top: 0;
-            z-index: 9;
-        }
-
-
-        .button { /* buttons for top nav bar */
-            padding: 8px 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: white;
-            z-index: 10;
-            
-        }
-
-
-        .button:hover { /* change color top nav bar button on hover  */
-            background-color: #58c4dd;;
-            cursor: pointer;
-            
-        }
-
-
-        .button:hover p { /* change colors of top nav bar button words on hover */
-            color: rgb(53, 137, 156); 
-            cursor: pointer;
-        }
-
-        a { /* removes underline for links */
-            text-decoration: none;  
-        }
-
-      
-        #neighborhood-menu { 
-            width: 100%;             /* make it fill the card */
-            padding: 6px;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255,255,255,0.12);
-            color: #58c4dd;          /* text color */
-        }
-
-        #neighborhood-menu option {
-            background: rgb(36, 71, 86);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: white;
-        }
-      
-        
     </style>
     <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
@@ -348,16 +289,6 @@
             <span><a href="https://kingcounty.gov/en/dept/metro" target="_blank"><i class="bi bi-globe"></i></a></span>
             <span id="reset"><a href="#">reset</a></span>
         </div>
-
-        <div class="card">
-            <h5 class="section-title">Zoom to Neighborhood</h5>
-            <select id="neighborhood-menu">
-                <option value="">Select a neighborhood</option>
-            </select>
-        </div>
-
-      
-       
 
         <div id="count" class="card">
             <h5 id="desc"># Transit Stops in the Displaying Region</h5>
@@ -381,38 +312,23 @@
             <div id="risk-list">Accessibility index not computed yet.</div>
         </div>
 
-
         <div id="footer">
             Data sources: Seattle neighborhoods, transit routes, and transit stops. The accessibility layer is computed
             as nearby stops divided by route length.
         </div>
+    </div>
 
-   
-
-    </div> <!-- end info panel-->
     <div id="map"></div>
-
-
     <div id="legend"></div>
-    
-
-    <!-- creat top nav bar -->
-    <nav class="navbar"> 
-        <a href="guide.html" target="_blank" class="button">User's Guide</a>
-        <a href="map.html" target="_blank" class="button">Seattle Transportation Map</a>
-        <a href="https://Maikhanhvt.github.io/GEOG458-final-project-transportation/about.html#data" class="button nav-link">Data</a>
-        <a href="about.html" target="_blank" class="button">About Us</a>
-        <a href="guide.html" target="_blank" class="button">User's Guide</a>
-    </nav>
 
     <script>
-        const collisionsUrl = 'assets/stop-joined-neig.geojson'; /* ln changed to joined file */
-        const flowUrl = 'assets/route-joined-neig.geojson'; /* ln changed to joined file */
+        const collisionsUrl = 'assets/TRANSITSTOP_POINT_2648_1381466621754376642.geojson';
+        const flowUrl = 'assets/TRANSITROUTE_LINE_2647_-7244657106187839166.geojson';
         const neighborhoodsUrl = 'assets/Neighborhood_Map_Atlas_Neighborhoods.geojson';
 
         const initialView = {
-            center: [-122.3325, 47.6220],
-            zoom: 10.4
+            center: [-122.3321, 47.6062],
+            zoom: 11.2
         };
 
         let map = null;
@@ -421,19 +337,17 @@
         let neighborhoodsWgs = null;
         let severityChart = null;
 
-
-    /* legend content starts here */
         const legend = document.getElementById('legend');
-        const collisionGrades = ['North bound', 'South bound', 'Eeast bound', 'West bound']; /* LN changed from active status to direction */
-        const collisionColors = ['#6CBED9', '#e63946', '#ffbe0b', '#2a9d8f'];
+        const collisionGrades = ['ACT (Active)', 'CLO (Closed)', 'INA (Inactive)', 'PLN (Planned)'];
+        const collisionColors = ['#2a9d8f', '#e76f51', '#f4a261', '#457b9d'];
         const collisionRadii = [6, 6, 6, 6];
 
-        const labels = ['<div style="text-align:center;"><strong>Legend</strong></div>'];
+        const labels = ['<strong>Legend</strong>'];
         for (let i = 0; i < collisionGrades.length; i += 1) {
             const radius = collisionRadii[i];
             labels.push(
                 '<p class="break"><i class="dot" style="background:' + collisionColors[i] + '; width: ' + (radius * 2) +
-                'px; height: ' + (radius * 2) + 'px;"></i><span class="dot-label" style="top: ' + radius + 'px;">' +
+                'px; height: ' + (radius * 2) + 'px;"></i> <span class="dot-label" style="top: ' + radius + 'px;">' +
                 collisionGrades[i] + '</span></p>'
             );
         }
@@ -442,7 +356,6 @@
         labels.push('<p style="margin:4px 0 0 0;"><span class="fill-swatch" style="background:#9ecae1"></span>Neighborhoods</p>');
         labels.push('<p style="text-align:right;font-size:10pt;margin:6px 0 0 0;">Source: Public transit datasets</p>');
         legend.innerHTML = labels.join('');
-    /* legend content ends here */
 
         function reprojectGeometry(geometry) {
             if (!geometry) {
@@ -487,8 +400,8 @@
             if (properties.OBJECTID !== undefined && properties.OBJECTID !== null) {
                 return String(properties.OBJECTID);
             }
-            if (properties.BEARING_CODE !== undefined && properties.BEARING_CODE !== null) { /* LN changed from STOP_ID to BEARING_CODE */
-                return String(properties.BEARING_CODE);
+            if (properties.STOP_ID !== undefined && properties.STOP_ID !== null) {
+                return String(properties.STOP_ID);
             }
             const coordinates = feature.geometry && feature.geometry.coordinates ? feature.geometry.coordinates : [index];
             return coordinates.join(',');
@@ -500,13 +413,13 @@
             }
 
             const rendered = map.queryRenderedFeatures({ layers: ['collisions'] });
-            
             const seen = new Set();
-            const severityCounts = { /* LN changed to nsew */
-                north: 0,
-                south: 0,
-                east: 0,
-                west: 0,
+            const severityCounts = {
+                paratransit: 0,
+                regular: 0,
+                regularLayover: 0,
+                schoolOnly: 0,
+                tunnel: 0,
                 other: 0
             };
 
@@ -518,34 +431,31 @@
                 seen.add(id);
 
                 const properties = feature.properties || {};
-                const bearing = String(properties.BEARING_CODE || '').toUpperCase(); /* LN changed to nsew */
-                if (bearing === 'N'){
-                    severityCounts.north += 1;
-                } 
-                else if (bearing === 'S') {
-                    severityCounts.south += 1;
-                }
-                else if (bearing === 'E'){ 
-                    severityCounts.east += 1;
-                }
-                else if (bearing === 'W'){ 
-                    severityCounts.west += 1;
-                }
-                else{
+                const stopType = String(properties.STOP_TYPE || '').toUpperCase();
+                if (stopType === 'PT') {
+                    severityCounts.paratransit += 1;
+                } else if (stopType === 'REG') {
+                    severityCounts.regular += 1;
+                } else if (stopType === 'RL') {
+                    severityCounts.regularLayover += 1;
+                } else if (stopType === 'SCH') {
+                    severityCounts.schoolOnly += 1;
+                } else if (stopType === 'TUN') {
+                    severityCounts.tunnel += 1;
+                } else {
                     severityCounts.other += 1;
-                } 
-
-        
+                }
             });
 
             document.getElementById('collision-count').textContent = seen.size.toLocaleString();
-            
 
             const columns = [
-                ['North', severityCounts.north],
-                ['South', severityCounts.south],
-                ['East', severityCounts.east],
-                ['West', severityCounts.west]
+                ['Paratransit', severityCounts.paratransit],
+                ['Regular', severityCounts.regular],
+                ['Regular/Layover', severityCounts.regularLayover],
+                ['School Only', severityCounts.schoolOnly],
+                ['Tunnel', severityCounts.tunnel],
+                ['Other', severityCounts.other]
             ];
 
             if (!severityChart) {
@@ -555,12 +465,13 @@
                         columns,
                         type: 'bar',
                         colors: {
-                            North: '#6CBED9',
-                            South: '#e63946',
-                            East: '#ffbe0b',
-                            West: '#2a9d8f'
+                            Paratransit: '#6a4c93',
+                            Regular: '#3a86ff',
+                            'Regular/Layover': '#2a9d8f',
+                            'School Only': '#f4a261',
+                            Tunnel: '#457b9d',
+                            Other: '#7b8b9f'
                         }
-                       
                     },
                     tooltip: {
                         grouped: false,
@@ -838,24 +749,6 @@
                 map.addSource('flows', { type: 'geojson', data: flowsWgs });
                 map.addSource('collisions', { type: 'geojson', data: collisionsWgs });
 
-                map.addSource('selected-neighborhood', { // for selected polygon
-                    type: 'geojson',
-                    data: {
-                        type: 'FeatureCollection',
-                        features: []
-                    }
-                });
-
-                map.addLayer({ //for selected polygon
-                    id: 'selected-neighborhood-fill',
-                    type: 'fill',
-                    source: 'selected-neighborhood',
-                    paint: {
-                        'fill-color': '#58c4dd', // h
-                        'fill-opacity': 0.2
-                    }
-                });
-
                 map.addLayer({
                     id: 'neighborhoods',
                     type: 'fill',
@@ -917,11 +810,11 @@
                         'circle-radius': 5.8,
                         'circle-color': [
                             'match',
-                            ['upcase', ['coalesce', ['get', 'BEARING_CODE'], '']],
-                            'N', '#6CBED9', 
-                            'S', '#e63946',
-                            'E', '#ffbe0b',
-                            'W', '#2a9d8f',
+                            ['upcase', ['coalesce', ['get', 'STOP_STATUS'], '']],
+                            'ACT', '#2a9d8f',
+                            'CLO', '#e76f51',
+                            'INA', '#f4a261',
+                            'PLN', '#457b9d',
                             '#7f8c8d'
                         ],
                         'circle-opacity': 0.8,
@@ -930,11 +823,18 @@
                     }
                 });
 
-                
+                map.on('click', 'neighborhoods', event => {
+                    const properties = event.features[0].properties;
+                    new maplibregl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            `<b>Neighborhood</b><br>` +
+                            `Large Area: ${properties.L_HOOD || 'n/a'}<br>` +
+                            `Small Area: ${properties.S_HOOD || 'n/a'}`
+                        )
+                        .addTo(map);
+                });
 
-                
-
-               
                 map.on('click', 'volume', event => {
                     const properties = event.features[0].properties;
                     new maplibregl.Popup()
@@ -953,13 +853,10 @@
                     new maplibregl.Popup()
                         .setLngLat(event.lngLat)
                         .setHTML(
-                            `<b>Route List ${properties.ROUTE_LIST || 'n/a'}</b><br>` +
-                            `Street Name: ${properties.ON_STREET_NAME || 'n/a'}<br>` +
-                            `Neighborhood (large): ${properties.L_HOOD || 'n/a'}<br>` +
-                            `Neighborhood (small): ${properties.S_HOOD || 'n/a'}<br>`+
-                            `Stop number: ${properties.STOP_ID || 'n/a'}<br>` +
-                            `District: ${properties.TRF_DISTRICT_CODE || 'n/a'}` 
-                            
+                            `<b>Stop ${properties.STOP_ID || 'n/a'}</b><br>` +
+                            `Stop Type: ${properties.STOP_TYPE || 'n/a'}<br>` +
+                            `Stop Status: ${properties.STOP_STATUS || 'n/a'}<br>` +
+                            `District: ${properties.TRF_DISTRICT_CODE || 'n/a'}`
                         )
                         .addTo(map);
                 });
@@ -985,58 +882,8 @@
                 map.on('idle', updateSummaryPanel);
                 map.on('moveend', updateSummaryPanel);
                 updateSummaryPanel();
-
-            // SELECTION MENU STARTS HERE 
-            
-            
-
-            const menu = document.getElementById("neighborhood-menu");
-
-            const neighborhoodSet = new Set(); //  set store unique names
-            neighborhoodsWgs.features.forEach((feature, index) => {
-                const name = feature.properties.L_HOOD; // iterate through diff L_HOOD
-                if (!name) return; // skip if no name
-                if (neighborhoodSet.has(name)) return; // skip duplicates
-
-                neighborhoodSet.add(name); // add name to set if returned 
-
-                const option = document.createElement("option");
-                option.value = index;        // store the feature index (for zoom)
-                option.textContent = name;
-
-                menu.appendChild(option);
             });
-
-            menu.addEventListener("change", function () {
-                const feature = neighborhoodsWgs.features[this.value];
-                if (!feature) return;
-                const bbox = turf.bbox(feature); // min/max coordinates
-                map.fitBounds(
-                    [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], // fit polygon to screen 
-                    { padding: 100 }
-                );
-
-                map.getSource('selected-neighborhood').setData(feature); // outline polygon
-
-            });
-            
-
-/////
-
-   
-            
-
-
-
-
-                
-                    
-
-
-            }); // map.on(load) ends 
-        } //  async function initializeMap() ends
-
-        
+        }
 
         document.getElementById('compute-risk').addEventListener('click', () => {
             if (!map || !map.getSource('flows')) {

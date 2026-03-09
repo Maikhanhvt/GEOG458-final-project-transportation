@@ -1,0 +1,320 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Titillium Web', serif;
+}
+
+#map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}
+
+#info { /* left information pannel */
+    z-index: 100;
+    position: absolute;
+    width: 400px;
+    max-width: calc(100% - 20px);
+    top: 4.8%;
+    bottom: 0%;
+    left: 0%;
+    padding: 18px 15px 18px 15px;
+    background: #4c87975a;
+    color: white;
+    overflow-y: auto;
+    border-radius: 0px;
+}
+
+#info a {
+    color: lightgray;
+}
+
+#info a:hover {
+    color: white;
+    opacity: 0.7;
+}
+
+#title {
+    font-size: 25px;
+    font-family: 'Oswald', sans-serif;
+    margin-bottom: 14px;
+}
+
+#title span {
+    font-size: 14px;
+    float: right;
+    margin-right: 10px;
+    margin-top: 8px;
+}
+
+#desc {
+    text-align: center;
+    color: lightgray;
+    font-size: medium;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+#collision-count {
+    margin: 0;
+    text-align: center;
+    color: #58c4dd;
+    font-size: 50px;
+    line-height: 1.1;
+}
+
+#severity-chart {
+    margin-top: 10px;
+}
+
+.card {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+
+.section-title {
+    margin: 0 0 8px 0;
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px;
+    letter-spacing: 0.4px;
+}
+
+.control-label {
+    display: block;
+    margin: 6px 0;
+    color: #e9ecef;
+    font-size: 14px;
+}
+
+.control-label input {
+    margin-right: 8px;
+}
+
+.btn {
+    margin-top: 8px;
+    border: 1px solid #adb5bd;
+    background: transparent;
+    color: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#progress {
+    margin: 8px 0 0 0;
+    font-size: 12px;
+    color: #adb5bd;
+}
+
+#risk-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.risk-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 0;
+    cursor: pointer;
+}
+
+.risk-item:last-child {
+    border-bottom: 0;
+}
+
+.risk-item:hover {
+    color: #ffd166;
+}
+
+.risk-meta {
+    font-size: 12px;
+    color: #ced4da;
+}
+
+#footer {
+    margin-top: 12px;
+    margin-right: 4px;
+    font-size: 13px;
+    line-height: 150%;
+    color: lightgray;
+}
+
+#legend { /* bottom right legend */
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 130px;
+    background:  #4c87975a;
+    margin-right: 20px;
+    margin-bottom: 40px;
+    padding: 15px 12px;
+    border-radius: 40px;
+    font-family: 'Open Sans', sans-serif;
+    color: #ffffff; /* text color */
+    font-size: 13px;
+}
+
+.break {
+    position: relative;
+    margin-right: 30px;
+    padding: 0;
+    min-height: 20px;
+}
+
+.dot {
+    display: inline-block;
+    margin-top: 4px;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+.dot-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-style: italic;
+    color: #ffffff;
+}
+
+.line-swatch {
+    display: inline-block;
+    width: 24px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border-radius: 2px;
+}
+
+.fill-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border-radius: 2px;
+}
+
+.c3 text { /* for bar graph x and y*/
+    fill: #e9ecef;
+    font-size: 11px;
+}
+
+.c3-legend-item text { /* for bar graph */
+    fill: #ffffff !important;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.c3-tooltip-container .c3-tooltip {
+    background: rgba(28, 33, 40, 0.95);
+    color: #ffffff;
+    border-collapse: collapse;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.c3-tooltip th,
+.c3-tooltip td {
+    background: rgba(28, 33, 40, 0.95) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    text-shadow: none !important;
+}
+
+.c3-tooltip tr {
+    background: rgba(28, 33, 40, 0.95) !important;
+}
+
+.c3-axis path,
+.c3-axis line,
+.c3-grid line {
+    stroke: rgba(255, 255, 255, 0.25);
+}
+
+.maplibregl-popup-content {
+    font-family: 'Titillium Web', serif;
+    color: #111827;
+}
+
+@media (max-width: 900px) {
+    #info {
+        width: calc(100% - 20px);
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        bottom: auto;
+        max-height: 62%;
+    }
+
+    #legend {
+        right: 8px;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
+
+.navbar { /* top navigation bar; its sticky */
+    width: 100%;
+    height: 35px;
+    background-color:  #16353d5a;
+    display: flex;
+    align-items: center; 
+    justify-content: center;  
+    position: sticky;
+    top: 0;
+    z-index: 9;
+}
+
+
+.button { /* buttons for top nav bar */
+    padding: 8px 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: white;
+    z-index: 10;
+    
+}
+
+
+.button:hover { /* change color top nav bar button on hover  */
+    background-color: #58c4dd;;
+    cursor: pointer;
+    
+}
+
+
+.button:hover p { /* change colors of top nav bar button words on hover */
+    color: rgb(53, 137, 156); 
+    cursor: pointer;
+}
+
+
+
+
+#neighborhood-menu { 
+    width: 100%;             /* make it fill the card */
+    padding: 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #58c4dd;          /* text color */
+}
+
+#neighborhood-menu option {
+    background: rgb(36, 71, 86);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: white;
+}
