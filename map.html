@@ -31,7 +31,7 @@
             bottom: 0%;
             left: 0%;
             padding: 18px 15px 18px 15px;
-            background: #4c87975a;
+            background: #264b5455;
             color: white;
             overflow-y: auto;
             border-radius: 0px;
@@ -161,6 +161,18 @@
         .btn:disabled {
             cursor: not-allowed;
             opacity: 0.6;
+        }
+
+        .btn-cancel {
+            margin-top: 8px;
+            margin-left: 8px;
+            border: 1px solid #f87171;
+            background: #b91c1c;
+            color: #f8fafc;
+        }
+
+        .btn-cancel:hover {
+            background: #dc2626;
         }
 
         #progress {
@@ -412,16 +424,19 @@
         <div class="card">
             <h5 class="section-title">Layers & Accessibility</h5>
             <label class="control-label"><input type="checkbox" id="toggle-volume" checked>Transit routes</label>
-            <label class="control-label"><input type="checkbox" id="toggle-risk" checked>Stop accessibility index</label>
             <label class="control-label"><input type="checkbox" id="toggle-collisions" checked>Transit stops</label>
             <label class="control-label"><input type="checkbox" id="toggle-neighborhoods" checked>Neighborhood boundaries</label>
-            <button id="compute-risk" class="btn">Compute stop accessibility index</button>
-            <p id="progress">Accessibility index not computed yet.</p>
+            <div id="accessibility-controls" style="display:none;">
+                <button id="compute-risk" class="btn">Compute accessibility index</button>
+                <button id="cancel-risk" class="btn btn-cancel" style="display:none;">Cancel</button>
+                <p id="progress" style="margin-top:6px;font-size:12px;color:#adb5bd;"></p>
+            </div>
         </div>
 
-        <div class="card">
-            <h5 class="section-title">Top Route Segments by Stop Access</h5>
-            <div id="risk-list">Accessibility index not computed yet.</div>
+        <div class="card" id="accessibility-result-card" style="display:none;">
+            <h5 class="section-title">Neighborhood Accessibility Index</h5>
+            <div id="risk-list"></div>
+            <button id="reset-accessibility" class="btn" style="margin-top:10px;">Clear accessibility result</button>
         </div>
 
 
@@ -455,7 +470,7 @@
     </nav>
 
     <script>
-        const collisionsUrl = 'assets/stop-joined-neig.geojson'; /* ln changed to joined file */
+        const stopsUrl = 'assets/stop-joined-neig.geojson'; /* ln changed to joined file */
         const flowUrl = 'assets/route-joined-neig.geojson'; /* ln changed to joined file */
         const neighborhoodsUrl = 'assets/Neighborhood_Map_Atlas_Neighborhoods.geojson';
 
@@ -466,10 +481,12 @@
 
         let map = null;
         let flowsWgs = null;
-        let collisionsWgs = null;
+        let stopsWgs = null;
         let neighborhoodsWgs = null;
         let severityChart = null;
+        let selectedNeighborhoodFeature = null;
         const dashboardToggle = document.getElementById('dashboard-toggle');
+        let currentComputationToken = null;
 
         function setDashboardCollapsed(collapsed) {
             document.body.classList.toggle('dashboard-collapsed', collapsed);
@@ -505,7 +522,6 @@
             );
         }
         labels.push('<p style="margin:8px 0 0 0;"><span class="line-swatch" style="background:#3a86ff"></span>Routes</p>');
-        labels.push('<p style="margin:4px 0 0 0;"><span class="line-swatch" style="background:#d73027"></span>High stop access</p>');
         labels.push('<p style="margin:4px 0 0 0;"><span class="fill-swatch" style="background:#9ecae1"></span>Neighborhoods</p>');
         labels.push('<p style="text-align:right;font-size:10pt;margin:6px 0 0 0;">Source: Public transit datasets</p>');
         legend.innerHTML = labels.join('');
@@ -527,15 +543,21 @@
         }
 
         async function loadData() {
-            const [collisions, flows, neighborhoods] = await Promise.all([
-                fetch(collisionsUrl).then(response => response.json()),
+            const [stops, flows, neighborhoods] = await Promise.all([
+                fetch(stopsUrl).then(response => response.json()),
                 fetch(flowUrl).then(response => response.json()),
                 fetch(neighborhoodsUrl).then(response => response.json())
             ]);
 
-            collisionsWgs = {
+            stopsWgs = {
                 type: 'FeatureCollection',
-                features: collisions.features.map(reprojectFeature).filter(Boolean)
+                features: stops.features
+                    .map(reprojectFeature)
+                    .filter(Boolean)
+                    .filter(feature => {
+                        const status = String((feature.properties && feature.properties.CURRENT_NEXT_CODE) || '').toUpperCase();
+                        return status.includes('IN SERVICE');
+                    })
             };
 
             flowsWgs = {
@@ -551,25 +573,54 @@
 
         function getFeatureId(feature, index) {
             const properties = feature.properties || {};
+            if (properties.STOP_ID !== undefined && properties.STOP_ID !== null) {
+                return String(properties.STOP_ID);
+            }
             if (properties.OBJECTID !== undefined && properties.OBJECTID !== null) {
                 return String(properties.OBJECTID);
-            }
-            if (properties.BEARING_CODE !== undefined && properties.BEARING_CODE !== null) { /* LN changed from STOP_ID to BEARING_CODE */
-                return String(properties.BEARING_CODE);
             }
             const coordinates = feature.geometry && feature.geometry.coordinates ? feature.geometry.coordinates : [index];
             return coordinates.join(',');
         }
 
         function updateSummaryPanel() {
-            if (!map || !map.getLayer('collisions')) {
+            if (!map || !map.getLayer('stops')) {
                 return;
             }
 
-            const rendered = map.queryRenderedFeatures({ layers: ['collisions'] });
-            
-            const seen = new Set();
-            const severityCounts = { /* LN changed to nsew */
+            let displayFeatures = [];
+            let categoryLabel;
+
+            if (selectedNeighborhoodFeature && stopsWgs) {
+                const neighborhoodName = selectedNeighborhoodFeature.properties.L_HOOD || 'Selected Neighborhood';
+                const seen = new Set();
+                stopsWgs.features.forEach((feature, index) => {
+                    if (!feature.geometry) return;
+                    if (turf.booleanPointInPolygon(feature, selectedNeighborhoodFeature)) {
+                        const id = getFeatureId(feature, index);
+                        if (!seen.has(id)) {
+                            seen.add(id);
+                            displayFeatures.push(feature);
+                        }
+                    }
+                });
+                categoryLabel = neighborhoodName;
+                document.getElementById('desc').textContent = `# Transit Stops in ${neighborhoodName}`;
+            } else {
+                const rendered = map.queryRenderedFeatures({ layers: ['stops'] });
+                const seen = new Set();
+                rendered.forEach((feature, index) => {
+                    const id = getFeatureId(feature, index);
+                    if (!seen.has(id)) {
+                        seen.add(id);
+                        displayFeatures.push(feature);
+                    }
+                });
+                categoryLabel = 'Visible stops';
+                document.getElementById('desc').textContent = '# Transit Stops in the Displaying Region';
+            }
+
+            const severityCounts = {
                 north: 0,
                 south: 0,
                 east: 0,
@@ -577,35 +628,17 @@
                 other: 0
             };
 
-            rendered.forEach((feature, index) => {
-                const id = getFeatureId(feature, index);
-                if (seen.has(id)) {
-                    return;
-                }
-                seen.add(id);
-
+            displayFeatures.forEach(feature => {
                 const properties = feature.properties || {};
-                const bearing = String(properties.BEARING_CODE || '').toUpperCase(); /* LN changed to nsew */
-                if (bearing === 'N'){
-                    severityCounts.north += 1;
-                } 
-                else if (bearing === 'S') {
-                    severityCounts.south += 1;
-                }
-                else if (bearing === 'E'){ 
-                    severityCounts.east += 1;
-                }
-                else if (bearing === 'W'){ 
-                    severityCounts.west += 1;
-                }
-                else{
-                    severityCounts.other += 1;
-                } 
-
-        
+                const bearing = String(properties.BEARING_CODE || '').toUpperCase();
+                if (bearing === 'N') severityCounts.north += 1;
+                else if (bearing === 'S') severityCounts.south += 1;
+                else if (bearing === 'E') severityCounts.east += 1;
+                else if (bearing === 'W') severityCounts.west += 1;
+                else severityCounts.other += 1;
             });
 
-            document.getElementById('collision-count').textContent = seen.size.toLocaleString();
+            document.getElementById('collision-count').textContent = displayFeatures.length.toLocaleString();
             
 
             const columns = [
@@ -655,7 +688,7 @@
                     axis: {
                         x: {
                             type: 'category',
-                            categories: ['Visible stops']
+                            categories: [categoryLabel]
                         },
                         y: {
                             tick: { format: d3.format('d') }
@@ -679,6 +712,10 @@
                 });
             } else {
                 severityChart.load({ columns });
+                if (severityChart.internal && severityChart.internal.config) {
+                    severityChart.internal.config.axis_x_categories = [categoryLabel];
+                    severityChart.flush();
+                }
             }
         }
 
@@ -721,6 +758,13 @@
             let current = 0;
 
             function step() {
+                if (callbacks && typeof callbacks.isCancelled === 'function' && callbacks.isCancelled()) {
+                    if (callbacks.onCancelled) {
+                        callbacks.onCancelled(current, total);
+                    }
+                    return;
+                }
+
                 const frameStart = performance.now();
 
                 while (current < total && performance.now() - frameStart < 20) {
@@ -787,6 +831,13 @@
 
                 if (current < total) {
                     setTimeout(step, 0);
+                    return;
+                }
+
+                if (callbacks && typeof callbacks.isCancelled === 'function' && callbacks.isCancelled()) {
+                    if (callbacks.onCancelled) {
+                        callbacks.onCancelled(current, total);
+                    }
                     return;
                 }
 
@@ -903,7 +954,7 @@
             map.on('load', () => {
                 map.addSource('neighborhoods', { type: 'geojson', data: neighborhoodsWgs });
                 map.addSource('flows', { type: 'geojson', data: flowsWgs });
-                map.addSource('collisions', { type: 'geojson', data: collisionsWgs });
+                map.addSource('stops', { type: 'geojson', data: stopsWgs });
 
                 map.addSource('selected-neighborhood', { // for selected polygon
                     type: 'geojson',
@@ -961,25 +1012,20 @@
                             12, 2.5,
                             14, 4
                         ],
+                        'line-offset': [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, -1.5,
+                            12, -2.5,
+                            14, -4
+                        ],
                         'line-opacity': 0.92
                     }
                 });
 
                 map.addLayer({
-                    id: 'risk',
-                    type: 'line',
-                    source: 'flows',
-                    paint: {
-                        'line-color': '#91cf60',
-                        'line-width': 3.5,
-                        'line-opacity': 0.95
-                    }
-                });
-
-                map.addLayer({
-                    id: 'collisions',
+                    id: 'stops',
                     type: 'circle',
-                    source: 'collisions',
+                    source: 'stops',
                     paint: {
                         'circle-radius': 5.8,
                         'circle-color': [
@@ -1015,7 +1061,7 @@
                         .addTo(map);
                 });
 
-                map.on('click', 'collisions', event => {
+                map.on('click', 'stops', event => {
                     const properties = event.features[0].properties;
                     new maplibregl.Popup()
                         .setLngLat(event.lngLat)
@@ -1031,22 +1077,8 @@
                         .addTo(map);
                 });
 
-                map.on('click', 'risk', event => {
-                    const properties = event.features[0].properties;
-                    new maplibregl.Popup()
-                        .setLngLat(event.lngLat)
-                        .setHTML(
-                            `<b>Stop Accessibility</b><br>` +
-                            `Route: ${properties.ROUTE_NUM || properties.ROUTE_ID || 'n/a'}<br>` +
-                            `Nearby Stops: ${properties.stop_count || 0}<br>` +
-                            `Index: ${Number(properties.risk_score || 0).toFixed(2)}`
-                        )
-                        .addTo(map);
-                });
-
                 setupToggle('toggle-volume', 'volume');
-                setupToggle('toggle-risk', 'risk');
-                setupToggle('toggle-collisions', 'collisions');
+                setupToggle('toggle-collisions', 'stops');
                 setupToggle('toggle-neighborhoods', 'neighborhoods');
 
                 map.on('idle', updateSummaryPanel);
@@ -1076,15 +1108,45 @@
 
             menu.addEventListener("change", function () {
                 const feature = neighborhoodsWgs.features[this.value];
-                if (!feature) return;
-                const bbox = turf.bbox(feature); // min/max coordinates
+                const controls = document.getElementById('accessibility-controls');
+                const resultCard = document.getElementById('accessibility-result-card');
+                const progress = document.getElementById('progress');
+
+                if (!feature) {
+                    selectedNeighborhoodFeature = null;
+                    if (controls) controls.style.display = 'none';
+                    if (resultCard) resultCard.style.display = 'none';
+                    if (map.getSource('selected-neighborhood')) {
+                        map.getSource('selected-neighborhood').setData({ type: 'FeatureCollection', features: [] });
+                    }
+                    updateSummaryPanel();
+                    return;
+                }
+
+                selectedNeighborhoodFeature = feature;
+
+                const bbox = turf.bbox(feature);
                 map.fitBounds(
-                    [[bbox[0], bbox[1]], [bbox[2], bbox[3]]], // fit polygon to screen 
+                    [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
                     { padding: 100 }
                 );
+                map.getSource('selected-neighborhood').setData(feature);
 
-                map.getSource('selected-neighborhood').setData(feature); // outline polygon
+                updateSummaryPanel();
 
+                if (controls) controls.style.display = 'block';
+                if (progress) progress.textContent = 'Select "Compute accessibility index" to analyse this neighborhood.';
+
+                const computeBtn = document.getElementById('compute-risk');
+                if (computeBtn) {
+                    computeBtn.textContent = 'Compute accessibility index';
+                    computeBtn.disabled = false;
+                }
+                const cancelBtn = document.getElementById('cancel-risk');
+                if (cancelBtn) cancelBtn.style.display = 'none';
+
+                if (resultCard) resultCard.style.display = 'none';
+                document.getElementById('risk-list').innerHTML = '';
             });
             
 
@@ -1106,109 +1168,143 @@
         
 
         document.getElementById('compute-risk').addEventListener('click', () => {
-            if (!map || !map.getSource('flows')) {
+            if (!selectedNeighborhoodFeature || !stopsWgs) {
                 return;
             }
 
             const button = document.getElementById('compute-risk');
             const progress = document.getElementById('progress');
+            const cancelButton = document.getElementById('cancel-risk');
+            const resultCard = document.getElementById('accessibility-result-card');
+
+            if (currentComputationToken && !currentComputationToken.cancelled) {
+                return;
+            }
+
+            const token = { cancelled: false };
+            currentComputationToken = token;
 
             button.disabled = true;
             button.textContent = 'Computing...';
-            progress.textContent = 'Starting accessibility computation...';
+            progress.textContent = 'Counting stops within neighborhood...';
 
-            computeRiskAsync(flowsWgs, collisionsWgs, {
-                onProgress: (done, total) => {
-                    progress.textContent = `Computing accessibility: ${done}/${total}`;
-                },
-                onDone: scores => {
-                    const augmentedFeatures = flowsWgs.features.map((feature, index) => {
-                        const crashes = scores[index].crashes;
-                        const score = scores[index].score;
-                        return {
-                            ...feature,
-                            properties: {
-                                ...feature.properties,
-                                stop_count: crashes,
-                                risk_score: score
-                            }
-                        };
-                    });
+            if (cancelButton) {
+                cancelButton.style.display = 'inline-block';
+                cancelButton.disabled = false;
+                cancelButton.onclick = () => {
+                    if (!currentComputationToken) return;
+                    currentComputationToken.cancelled = true;
+                    cancelButton.disabled = true;
+                    progress.textContent = 'Cancelling...';
+                };
+            }
 
-                    flowsWgs = {
-                        ...flowsWgs,
-                        features: augmentedFeatures
-                    };
-
-                    map.getSource('flows').setData(flowsWgs);
-
-                    const nonZeroScores = scores
-                        .map(item => item.score)
-                        .filter(value => value > 0)
-                        .sort((a, b) => a - b);
-
-                    function quantile(percentile) {
-                        if (!nonZeroScores.length) {
-                            return 0;
-                        }
-                        const idx = Math.min(nonZeroScores.length - 1, Math.floor(percentile * nonZeroScores.length));
-                        return nonZeroScores[idx];
-                    }
-
-                    const q25 = quantile(0.25) || 1;
-                    const q50 = quantile(0.5) || 2;
-                    const q75 = quantile(0.75) || 3;
-                    const q90 = quantile(0.9) || 4;
-
-                    map.setPaintProperty('risk', 'line-color', [
-                        'step',
-                        ['coalesce', ['get', 'risk_score'], 0],
-                        '#cddfd0', q25, '#a9e3a0',
-                        q50, '#fee08b',
-                        q75, '#fdae61',
-                        q90, '#d73027'
-                    ]);
-
-                    map.setPaintProperty('risk', 'line-width', [
-                        'interpolate', ['linear'], ['coalesce', ['get', 'risk_score'], 0],
-                        0, 3.5,
-                        q25, 5,
-                        q50, 6.5,
-                        q75, 8,
-                        q90, 10
-                    ]);
-
-                    renderTopSegments(scores);
-
-                    progress.textContent = 'Accessibility index ready.';
-                    button.textContent = 'Recompute accessibility index';
+            setTimeout(() => {
+                if (currentComputationToken && currentComputationToken.cancelled) {
+                    progress.textContent = 'Accessibility computation cancelled.';
+                    button.textContent = 'Compute accessibility index';
                     button.disabled = false;
+                    if (cancelButton) cancelButton.style.display = 'none';
+                    currentComputationToken = null;
+                    return;
                 }
-            });
+
+                const neighborhood = selectedNeighborhoodFeature;
+                const neighborhoodName = neighborhood.properties.L_HOOD || 'Selected neighborhood';
+
+                let stopCount = 0;
+
+                stopsWgs.features.forEach(stop => {
+                    if (!stop.geometry) return;
+                    if (turf.booleanPointInPolygon(stop, neighborhood)) {
+                        stopCount++;
+                    }
+                });
+
+                if (currentComputationToken && currentComputationToken.cancelled) {
+                    progress.textContent = 'Accessibility computation cancelled.';
+                    button.textContent = 'Compute accessibility index';
+                    button.disabled = false;
+                    if (cancelButton) cancelButton.style.display = 'none';
+                    currentComputationToken = null;
+                    return;
+                }
+
+                const areaKm2 = turf.area(neighborhood) / 1e6;
+                const index = stopCount / areaKm2;
+
+                const list = document.getElementById('risk-list');
+                list.innerHTML =
+                    `<div style="margin-bottom:8px;font-size:15px;"><strong>${neighborhoodName}</strong></div>` +
+                    `<div class="risk-meta" style="margin-bottom:4px;">Stops in neighborhood: <strong style="color:#58c4dd;">${stopCount}</strong></div>` +
+                    `<div class="risk-meta" style="margin-bottom:12px;">Neighborhood area: ${areaKm2.toFixed(2)} km²</div>` +
+                    `<div style="padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);text-align:center;">` +
+                    `  <div style="font-size:11px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.5px;">Accessibility Index</div>` +
+                    `  <div style="font-size:38px;color:#58c4dd;font-weight:700;line-height:1.2;margin:4px 0;">${index.toFixed(2)}</div>` +
+                    `  <div style="font-size:11px;color:#adb5bd;">stops per km²</div>` +
+                    `</div>`;
+
+                if (resultCard) resultCard.style.display = 'block';
+                progress.textContent = 'Accessibility index ready.';
+                button.textContent = 'Recompute accessibility index';
+                button.disabled = false;
+                if (cancelButton) cancelButton.style.display = 'none';
+                currentComputationToken = null;
+            }, 50);
+        });
+
+        document.getElementById('reset-accessibility').addEventListener('click', () => {
+            const resultCard = document.getElementById('accessibility-result-card');
+            const list = document.getElementById('risk-list');
+            const progress = document.getElementById('progress');
+            const button = document.getElementById('compute-risk');
+            const cancelButton = document.getElementById('cancel-risk');
+
+            if (resultCard) resultCard.style.display = 'none';
+            if (list) list.innerHTML = '';
+            if (progress) {
+                if (selectedNeighborhoodFeature) {
+                    progress.textContent = 'Select "Compute accessibility index" to analyse this neighborhood.';
+                } else {
+                    progress.textContent = '';
+                }
+            }
+            if (button) {
+                button.textContent = 'Compute accessibility index';
+                button.disabled = false;
+            }
+            if (cancelButton) {
+                cancelButton.style.display = 'none';
+                cancelButton.disabled = false;
+            }
+            currentComputationToken = null;
         });
 
         document.getElementById('reset').addEventListener('click', event => {
             event.preventDefault();
 
-            // map zoom
             if (!map) {
                 return;
             }
 
-            //dropdown selection
             const menu = document.getElementById('neighborhood-menu');
             if (menu) {
-                menu.selectedIndex = 0; 
+                menu.selectedIndex = 0;
             }
 
-            // highlighted polygon
             if (map.getSource('selected-neighborhood')) {
                 map.getSource('selected-neighborhood').setData({
                     type: 'FeatureCollection',
                     features: []
                 });
             }
-            
+
+            selectedNeighborhoodFeature = null;
+            const controls = document.getElementById('accessibility-controls');
+            const resultCard = document.getElementById('accessibility-result-card');
+            if (controls) controls.style.display = 'none';
+            if (resultCard) resultCard.style.display = 'none';
+            updateSummaryPanel();
 
             map.flyTo({
                 center: initialView.center,
