@@ -35,6 +35,45 @@
             color: white;
             overflow-y: auto;
             border-radius: 0px;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+
+        body.dashboard-collapsed #info {
+            transform: translateX(calc(-100% - 24px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #dashboard-toggle {
+            position: absolute;
+            top: 64px;
+            left: 400px;
+            z-index: 110;
+            transform: translateX(12px);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 999px;
+            background: rgba(17, 24, 39, 0.85);
+            color: #f8f9fa;
+            cursor: pointer;
+            font-family: 'Titillium Web', serif;
+            font-size: 14px;
+            transition: left 0.25s ease, transform 0.25s ease, background 0.2s ease;
+        }
+
+        #dashboard-toggle:hover {
+            background: rgba(88, 196, 221, 0.92);
+        }
+
+        body.dashboard-collapsed #dashboard-toggle {
+            left: 0;
+        }
+
+        #dashboard-toggle .toggle-label {
+            white-space: nowrap;
         }
 
         #info a {
@@ -273,6 +312,12 @@
                 margin-right: 0;
                 margin-bottom: 10px;
             }
+
+            #dashboard-toggle {
+                top: 58px;
+                left: 10px;
+                transform: none;
+            }
         }
 
         .navbar { /* top navigation bar; its sticky */
@@ -390,6 +435,10 @@
    
 
     </div> <!-- end info panel-->
+    <button id="dashboard-toggle" type="button" aria-expanded="true" aria-label="Close dashboard">
+        <i class="bi bi-chevron-left"></i>
+        <span class="toggle-label">Hide dashboard</span>
+    </button>
     <div id="map"></div>
 
 
@@ -420,6 +469,24 @@
         let collisionsWgs = null;
         let neighborhoodsWgs = null;
         let severityChart = null;
+        const dashboardToggle = document.getElementById('dashboard-toggle');
+
+        function setDashboardCollapsed(collapsed) {
+            document.body.classList.toggle('dashboard-collapsed', collapsed);
+            dashboardToggle.setAttribute('aria-expanded', String(!collapsed));
+            dashboardToggle.setAttribute('aria-label', collapsed ? 'Open dashboard' : 'Close dashboard');
+            dashboardToggle.innerHTML = collapsed
+                ? '<i class="bi bi-chevron-right"></i><span class="toggle-label">Show dashboard</span>'
+                : '<i class="bi bi-chevron-left"></i><span class="toggle-label">Hide dashboard</span>';
+
+            if (map) {
+                setTimeout(() => map.resize(), 260);
+            }
+        }
+
+        dashboardToggle.addEventListener('click', () => {
+            setDashboardCollapsed(!document.body.classList.contains('dashboard-collapsed'));
+        });
 
 
     /* legend content starts here */
