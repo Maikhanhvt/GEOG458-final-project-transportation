@@ -1,22 +1,194 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <title>User Guide</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Titillium+Web&display=swap" rel="stylesheet">
-    <style>
 
+    <style>
+        body {
+            background-color: rgb(30, 35, 37);
+            font-family: 'Titillium Web', sans-serif;
+            margin: 0;
+            color: white;
+        }
+
+        .page-container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 35px auto;
+        }
+
+        .content-box {
+            background-color: rgba(255, 255, 255, 0.06);
+            padding: 30px 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            margin-bottom: 30px;
+        }
+
+        .main-title {
+            text-align: center;
+            font-size: 2.2em;
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .intro-subtitle {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #b9d7ea;
+            margin-bottom: 15px;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 1.05em;
+            color: #f2f2f2;
+            margin-bottom: 0;
+        }
+
+        .bottom-row {
+            display: flex;
+            gap: 30px;
+            align-items: stretch;
+        }
+
+        .left-box {
+            flex: 1;
+        }
+
+        .right-box {
+            flex: 1.5;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.9em;
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .two-column {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+            margin-top: 10px;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .column h3 {
+            text-align: center;
+            font-size: 1.8em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #b9d7ea;
+        }
+
+        ul {
+            padding-left: 25px;
+            line-height: 1.8;
+            font-size: 1.05em;
+            margin-bottom: 0;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 900px) {
+            .bottom-row {
+                flex-direction: column;
+            }
+
+            .two-column {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
     </style>
 </head>
 
-
 <body>
     <nav class="navbar"> 
-        <a href="guide.html"  class="button">User's Guide</a>
-        <a href="map.html"  class="button">Seattle Transportation Map</a>
-        <a href="about.html"  class="button">About Us</a>
-
+        <a href="guide.html" class="button">User's Guide</a>
+        <a href="map.html" class="button">Seattle Transportation Map</a>
+        <a href="about.html" class="button">About Us</a>
     </nav>
 
+    <div class="page-container">
 
+        <!-- top box -->
+        <div class="content-box">
+            <h1 class="main-title">Public Transportation In Washington</h1>
+
+            <div class="intro-subtitle">What is it for?</div>
+
+            <p>
+                This project visualizes public transit services in Seattle using interactive web mapping.
+                The goal is to help users explore transit routes, stop accessibility, and neighborhood-level
+                transportation patterns across the city.
+            </p>
+        </div>
+
+        <!-- bottom half -->
+        <div class="bottom-row">
+
+            <!-- LEFT box -->
+            <div class="content-box left-box">
+                <h2 class="section-title">How can this map help me?</h2>
+
+                <ul>
+                    <li>I am a student or elder</li>
+                    <li>I don't have access to a personal vehicle</li>
+                    <li>I don't have a drivers license</li>
+                    <li>I am a commuter</li>
+                    <li>I rely on public transportation</li>
+                    <li>I need to find accessible routes</li>
+                    <li>I want to compare transit stops in neighborhoods</li>
+                    <li>I am planning a trip</li>
+                </ul>
+            </div>
+
+            <!-- RIGHT box -->
+            <div class="content-box right-box">
+                <h2 class="section-title">How do I use this map?</h2>
+
+                <div class="two-column">
+                    <div class="column">
+                        <h3>Features</h3>
+                        <ul>
+                            <li>"Zoom to a (Seattle) Neighborhood" selection</li>
+                            <li>"# Transit Stops in the Displaying Region" (dynamic chart)</li>
+                            <li>Compute "Neighborhood Accessibility Index"</li>
+                            <li>Hide dashboard</li>
+                            <li>Reset dashboard</li>
+                            <li>Fiter Layers</li>
+                            <li>Map zoom buttons</li>
+                        </ul>
+                    </div>
+
+                    <div class="column">
+                        <h3>Legend</h3>
+                        <ul>
+                            <li>North Bound Transit Stops</li>
+                            <li>South Bound Transit Stops</li>
+                            <li>East Bound Transit Stops</li>
+                            <li>West Bound Transit Stops</li>
+                            <li>Bus Routes</li>
+                            <li>Neighborhood Boundaries</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </body>
 </html>
