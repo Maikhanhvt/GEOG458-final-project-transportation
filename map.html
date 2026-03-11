@@ -525,7 +525,7 @@
                 collisionGrades[i] + '</span></p>'
             );
         }
-        labels.push('<p style="margin:8px 0 0 0;"><span class="line-swatch" style="background:#3a86ff"></span>Routes</p>');
+        labels.push('<p style="margin:8px 0 0 0;"><span class="line-swatch" style="background:#4CBB17"></span>Routes</p>');
         labels.push('<p style="margin:4px 0 0 0;"><span class="fill-swatch" style="background:#9ecae1"></span>Neighborhoods</p>');
         labels.push('<p style="text-align:right;font-size:10pt;margin:6px 0 0 0;">Source: Public transit datasets</p>');
         legend.innerHTML = labels.join('');
@@ -973,8 +973,8 @@
                     type: 'fill',
                     source: 'selected-neighborhood',
                     paint: {
-                        'fill-color': '#58c4dd', // h
-                        'fill-opacity': 0.2
+                        'fill-color': '#58c4dd',
+                        'fill-opacity': 0.38
                     }
                 });
 
@@ -1000,15 +1000,31 @@
                 });
 
                 map.addLayer({
+                    id: 'volume-casing',
+                    type: 'line',
+                    source: 'flows',
+                    paint: {
+                        'line-color': '#0b1526',
+                        'line-width': [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 2.2,
+                            12, 3.3,
+                            14, 5.0
+                        ],
+                        'line-opacity': 0.9
+                    }
+                });
+
+                map.addLayer({
                     id: 'volume',
                     type: 'line',
                     source: 'flows',
                     paint: {
                         'line-color': [
                             'case',
-                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'E'], '#5e60ce',
-                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'L'], '#3a86ff',
-                            '#4895ef'
+                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'E'], '#4CBB17',
+                            ['==', ['get', 'LOCAL_EXPRESS_CODE'], 'L'], '#4CBB17',
+                            '#4CBB17'
                         ],
                         'line-width': [
                             'interpolate', ['linear'], ['zoom'],
@@ -1022,7 +1038,7 @@
                             12, -2.5,
                             14, -4
                         ],
-                        'line-opacity': 0.92
+                        'line-opacity': 0.95
                     }
                 });
 
@@ -1035,7 +1051,7 @@
                         'circle-color': [
                             'match',
                             ['upcase', ['coalesce', ['get', 'BEARING_CODE'], '']],
-                            'N', '#6CBED9', 
+                            'N', '#6CBED9',
                             'S', '#e63946',
                             'E', '#ffbe0b',
                             'W', '#2a9d8f',
@@ -1104,19 +1120,32 @@
                 neighborhoodSet.add(name); // add name to set if returned 
 
                 const option = document.createElement("option");
-                option.value = index;        // store the feature index (for zoom)
+                option.value = name;        // store the neighborhood name
                 option.textContent = name;
 
                 menu.appendChild(option);
             });
 
             menu.addEventListener("change", function () {
-                const feature = neighborhoodsWgs.features[this.value];
+                const selectedName = this.value;
                 const controls = document.getElementById('accessibility-controls');
                 const resultCard = document.getElementById('accessibility-result-card');
                 const progress = document.getElementById('progress');
 
-                if (!feature) {
+                if (!selectedName) {
+                    selectedNeighborhoodFeature = null;
+                    if (controls) controls.style.display = 'none';
+                    if (resultCard) resultCard.style.display = 'none';
+                    if (map.getSource('selected-neighborhood')) {
+                        map.getSource('selected-neighborhood').setData({ type: 'FeatureCollection', features: [] });
+                    }
+                    updateSummaryPanel();
+                    return;
+                    return;
+                }
+
+                const matching = neighborhoodsWgs.features.filter(f => (f.properties && f.properties.L_HOOD) === selectedName);
+                if (!matching.length) {
                     selectedNeighborhoodFeature = null;
                     if (controls) controls.style.display = 'none';
                     if (resultCard) resultCard.style.display = 'none';
@@ -1127,14 +1156,29 @@
                     return;
                 }
 
-                selectedNeighborhoodFeature = feature;
+                let combinedFeature;
+                if (matching.length === 1) {
+                    combinedFeature = matching[0];
+                } else {
+                    const multi = {
+                        type: 'MultiPolygon',
+                        coordinates: matching.map(f => f.geometry && f.geometry.coordinates).filter(Boolean)
+                    };
+                    combinedFeature = {
+                        type: 'Feature',
+                        properties: { L_HOOD: selectedName },
+                        geometry: multi
+                    };
+                }
 
-                const bbox = turf.bbox(feature);
+                selectedNeighborhoodFeature = combinedFeature;
+
+                const bbox = turf.bbox(combinedFeature);
                 map.fitBounds(
                     [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
                     { padding: 100 }
                 );
-                map.getSource('selected-neighborhood').setData(feature);
+                map.getSource('selected-neighborhood').setData(combinedFeature);
 
                 updateSummaryPanel();
 
@@ -1234,7 +1278,7 @@
                     return;
                 }
 
-                const areaKm2 = turf.area(neighborhood) / 1e6;
+                const areaKm2 = turf.area(neighborhood) / 1e6; // square meters to square kilometers
                 const index = stopCount / areaKm2;
 
                 const list = document.getElementById('risk-list');
