@@ -511,9 +511,11 @@
 
 
     /* legend content starts here */
+
+
         const legend = document.getElementById('legend');
         const collisionGrades = ['North bound', 'South bound', 'East bound', 'West bound']; /* LN changed from active status to direction */
-        const collisionColors = ['#6CBED9', '#e63946', '#ffbe0b', '#2a9d8f'];
+        const collisionColors = ['#1DAFF2', '#C40024', '#F6FF00', '#02BD94'];
         const collisionRadii = [6, 6, 6, 6];
 
         const labels = ['<div style="text-align:center;"><strong>Legend</strong></div>'];
@@ -659,12 +661,13 @@
                         columns,
                         type: 'bar',
                         colors: {
-                            North: '#6CBED9',
-                            South: '#e63946',
-                            East: '#ffbe0b',
-                            West: '#2a9d8f'
+                            North: '#1AD944',
+                            South: '#C40024',
+                            East: '#F6FF00',
+                            West: '#29A6D4'
                         }
-                       
+
+          
                     },
                     tooltip: {
                         grouped: false,
@@ -1051,12 +1054,13 @@
                         'circle-color': [
                             'match',
                             ['upcase', ['coalesce', ['get', 'BEARING_CODE'], '']],
-                            'N', '#6CBED9',
-                            'S', '#e63946',
-                            'E', '#ffbe0b',
-                            'W', '#2a9d8f',
+                            'N', '#17FF32',
+                            'S', '#C40024',
+                            'E', '#F6FF00',
+                            'W', '#29A6D4',
                             '#7f8c8d'
                         ],
+
                         'circle-opacity': 0.8,
                         'circle-stroke-color': '#0b1526',
                         'circle-stroke-width': 0.8
