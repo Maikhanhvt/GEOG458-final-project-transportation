@@ -2,6 +2,9 @@
 
 GEOG 458 Group 17
 
+## AI Disclosure
+No AI tools are used in this project.
+
 ## Project URL
 
 - Project site: [https://maikhanhvt.github.io/GEOG458-final-project-transportation/](https://maikhanhvt.github.io/GEOG458-final-project-transportation/)
