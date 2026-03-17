@@ -7,7 +7,6 @@ No AI tools are used in this project.
 
 ## Project URL
 
-- Project site: [https://maikhanhvt.github.io/GEOG458-final-project-transportation/](https://maikhanhvt.github.io/GEOG458-final-project-transportation/)
 - Main dashboard: [https://maikhanhvt.github.io/GEOG458-final-project-transportation/map.html](https://maikhanhvt.github.io/GEOG458-final-project-transportation/map.html)
 
 ## Team Members
